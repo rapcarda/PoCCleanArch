@@ -1,4 +1,5 @@
 ﻿using Bookify.Domain.Abstractions;
+using Bookify.Domain.Users.Events;
 using Bookify.Domain.Users.ValueObjects;
 
 namespace Bookify.Domain.Users;
@@ -25,7 +26,11 @@ public class User : Entity
     //       Poder adicionar alguma regra no método Create que não caiba no construtor default da classe
     public static User Create(FirstName firstName, LastName lastName, Email email)
     {
-        return new User(Guid.NewGuid(), firstName, lastName, email);
+        var user = new User(Guid.NewGuid(), firstName, lastName, email);
+
+        user.RaiseDomainEvent(new UserCreatedDomainEvent(user.Id));
+
+        return user;
     }
 
 }
