@@ -11,7 +11,10 @@ internal sealed class BookingReservedDomainEventHandler : INotificationHandler<B
     private readonly IBookingRespository _bookingRespository;
     private readonly IEmailService _emailService;
 
-    public BookingReservedDomainEventHandler(IUserRepository userRepository, IBookingRespository bookingRespository, IEmailService emailService)
+    public BookingReservedDomainEventHandler(
+        IUserRepository userRepository,
+        IBookingRespository bookingRespository, 
+        IEmailService emailService)
     {
         _userRepository=userRepository;
         _bookingRespository=bookingRespository;
@@ -34,8 +37,9 @@ internal sealed class BookingReservedDomainEventHandler : INotificationHandler<B
             return;
         }
 
-        await _emailService.SendAsync(user.Email,
-            "Booking reserved!",
+        await _emailService.SendAsync(
+            user.Email,
+           "Booking reserved!",
             "You have 10 minutes to confirm this booking");
 
     }
