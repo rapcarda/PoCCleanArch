@@ -55,6 +55,11 @@ internal sealed class SearchApartmentsQueryHandler : IQueryHandler<SearchApartme
             )
             """;
 
+        // O código abaixo utiliza 2 classes para propagar os dados vindo do DB via drapper. No QueryAsync é informado que metade dos dados será projetado em ApartmentResponse e outra metade em AddressResponse
+        // e o objeto final será o terceiro parâmetro que é ApartmentResponse.
+        // Com isso é informado o splitOn dizendo para o drapper exatamente a partir de que campo do select, ele deverá fazer a separação. Ao informar Country, todos os campos do select até o primeiro campo
+        // imediatamente antes de Country será projetado em ApartmentResponse, a partir de Country será projetado em Address Response. Após o parâmetro sql é informado uma função dizendo que a propriedade
+        // Address de apartmentResponse será os dadso de AddresResponse do mesmo registro.
         var apartments = await connection.QueryAsync<ApartmentResponse, AddressResponse, ApartmentResponse>(
             sql,
             (apartment, address) =>
