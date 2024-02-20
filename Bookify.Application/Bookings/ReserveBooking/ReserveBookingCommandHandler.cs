@@ -1,5 +1,6 @@
 ﻿using Bookify.Application.Abstractions.Clock;
 using Bookify.Application.Abstractions.Messaging;
+using Bookify.Application.Exceptions;
 using Bookify.Domain.Abstractions;
 using Bookify.Domain.Apartments;
 using Bookify.Domain.Bookings;
@@ -53,19 +54,31 @@ internal sealed class ReserveBookingCommandHandler : ICommandHandler<ReserveBook
             return Result.Failure<Guid>(BookingErrors.Overlap);
         }
 
-        var booking = Booking.Reserve(apartment, 
-            user.Id, 
-            duration, 
-            //  Utilizar o utcNow como abaixo não é errado, porém tem uma forma melhor, que deixa o código mais testável, podendo mockar o utcNow,
-            //   que é utilizando uma interface.
-            //utcNow: DateTime.UtcNow, 
-            _dateTimeProvider.UtcNow,
-            _pricingService);
+        //try para tratamento de concorrência
+        //Geralmente tem um valor no DB que gerencia o optmistic concurrency. Isso é usado quando for persistir as alterações no DB, verifica se a versão do BD é diferente da em memória
+        //Neste caso não pode ser nenhum campo do booking, por que ele ainda não existe no BD, por isso podemos usar ou Apartment ou User.
+        //Se analisar o método de Reserve no Booking, tem um campo "LastBookedOnUtc", do Apartment. Ver em ApartmentConfiguration
+        try
+        {
+            var booking = Booking.Reserve(apartment,
+                user.Id,
+                duration,
+                //  Utilizar o utcNow como abaixo não é errado, porém tem uma forma melhor, que deixa o código mais testável, podendo mockar o utcNow,
+                //   que é utilizando uma interface.
+                //utcNow: DateTime.UtcNow, 
+                _dateTimeProvider.UtcNow,
+                _pricingService);
 
-        _bookingRespoitory.Add(booking);
+            _bookingRespoitory.Add(booking);
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return booking.Id;
+            return booking.Id;
+        }
+        catch (ConcurrencyException) 
+        {
+            //Neste caso, se der erro de concorrência do registro quer dizer que outro usuário fez a reserva antes, por isso retorna erro de overlap
+            return Result.Failure<Guid>(BookingErrors.Overlap);
+        }
     }
 }

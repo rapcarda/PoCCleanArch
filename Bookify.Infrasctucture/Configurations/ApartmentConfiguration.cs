@@ -34,5 +34,8 @@ internal sealed class ApartmentConfiguration : IEntityTypeConfiguration<Apartmen
             priceBuilder.Property(money => money.Currency)
                 .HasConversion(currency => currency.Code, code => Currency.FromCode(code));
         });
+
+        //Um shadow property para dizer para o EF Core que ele deve usar essa coluna para interpretar uma nova versão e implementar optimistic concurrency suporte
+        builder.Property<uint>("Version").IsRowVersion();
     }
 }
